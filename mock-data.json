@@ -1,0 +1,57 @@
+[
+  {
+    "topic": "factory/device/001/data",
+    "payload": {
+      "deviceId": "001",
+      "deviceName": "1号车间温控",
+      "temperature": 26.5,
+      "humidity": 45,
+      "status": 1,
+      "timestamp": "2026-10-22 15:30:00"
+    }
+  },
+  {
+    "topic": "factory/device/002/data",
+    "payload": {
+      "deviceId": "002",
+      "deviceName": "2号车间温控",
+      "temperature": 32.8,
+      "humidity": 52,
+      "status": 1,
+      "timestamp": "2026-10-22 15:30:05"
+    }
+  },
+  {
+    "topic": "factory/device/003/data",
+    "payload": {
+      "deviceId": "003",
+      "deviceName": "3号车间温控",
+      "temperature": 18.2,
+      "humidity": 38,
+      "status": 0,
+      "timestamp": "2026-10-22 15:30:10"
+    }
+  },
+  {
+    "topic": "factory/device/001/data",
+    "payload": {
+      "deviceId": "001",
+      "deviceName": "1号车间温控",
+      "temperature": 27.1,
+      "humidity": 44,
+      "status": 1,
+      "timestamp": "2026-10-22 15:30:15"
+    }
+  },
+  {
+    "topic": "factory/device/002/data",
+    "payload": {
+      "deviceId": "002",
+      "deviceName": "2号车间温控",
+      "temperature": 35.2,
+      "humidity": 55,
+      "status": 2,
+      "timestamp": "2026-10-22 15:30:20"
+    }
+  }
+]
