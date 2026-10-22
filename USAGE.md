@@ -6,9 +6,10 @@
 2. [CIMPro 组件配置](#cimpro-组件配置)
 3. [代码配置详解](#代码配置详解)
 4. [Mock 模式测试](#mock-模式测试)
-5. [切换到真实 MQTT](#切换到真实-mqtt)
-6. [调试与排错](#调试与排错)
-7. [自定义扩展](#自定义扩展)
+5. [Mock 数据文件说明](#mock-数据文件说明)
+6. [切换到真实 MQTT](#切换到真实-mqtt)
+7. [调试与排错](#调试与排错)
+8. [自定义扩展](#自定义扩展)
 
 ---
 
@@ -146,6 +147,284 @@ const mockMessages = [
 mockTimer = setInterval(() => {
   // ...
 }, 3000);  // ⭐ 改这里的数字（毫秒），3000 = 3 秒
+```
+
+---
+
+## Mock 数据文件说明
+
+### mock-data.json 文件用途
+
+项目中的 `mock-data.json` 文件提供了标准的 Mock 数据示例，用于：
+
+1. **开发测试**：在没有真实 MQTT 环境时测试大屏显示效果
+2. **格式参考**：了解 MQTT 消息的 JSON 数据结构
+3. **演示展示**：向客户或团队展示功能效果
+4. **调试基准**：验证数据处理逻辑是否正确
+
+### 数据文件位置
+
+```
+cimpro-mqtt-temp/
+├── mqtt-temperature.js    # 主代码文件
+├── mock-data.json         # Mock 数据示例（本文件）
+├── README.md              # 项目说明
+└── USAGE.md               # 使用文档（本文件）
+```
+
+### 数据结构规范
+
+`mock-data.json` 是一个 JSON 数组，每个元素代表一条 MQTT 消息：
+
+```json
+[
+  {
+    "topic": "factory/device/001/data",  // MQTT 主题（字符串）
+    "payload": {                          // 消息负载（对象）
+      "deviceId": "001",                  // 设备 ID（字符串）
+      "deviceName": "1号车间温控",        // 设备名称（字符串）
+      "temperature": 26.5,                // 温度值（数字，摄氏度）
+      "humidity": 45,                     // 湿度值（数字，百分比）
+      "status": 1,                        // 运行状态（数字）
+      "timestamp": "2026-10-22 15:30:00"  // 时间戳（字符串）
+    }
+  }
+]
+```
+
+### 字段详细说明
+
+| 字段名 | 类型 | 必填 | 说明 | 示例值 |
+|--------|------|------|------|--------|
+| `topic` | string | 是 | MQTT 消息主题，用于标识数据来源 | `"factory/device/001/data"` |
+| `payload.deviceId` | string | 是 | 设备唯一标识符 | `"001"` |
+| `payload.deviceName` | string | 是 | 设备显示名称 | `"1号车间温控"` |
+| `payload.temperature` | number | 是 | 温度值（摄氏度） | `26.5` |
+| `payload.humidity` | number | 否 | 湿度值（百分比） | `45` |
+| `payload.status` | number | 是 | 运行状态：0=停止，1=运行，2=告警 | `1` |
+| `payload.timestamp` | string | 否 | 数据时间戳 | `"2026-10-22 15:30:00"` |
+
+### 温度阈值与颜色映射
+
+代码中根据温度值自动设置显示颜色：
+
+| 温度范围 | 颜色 | 十六进制 | 状态说明 |
+|---------|------|---------|---------|
+| < 30°C | 青色 | `#00ffff` | 正常 |
+| 30-35°C | 黄色 | `#ffaa00` | 警告 |
+| > 35°C | 红色 | `#ff4444` | 危险 |
+
+### 状态值与显示映射
+
+| 状态值 | 显示文本 | 颜色 | 说明 |
+|-------|---------|------|------|
+| `0` | 已停止 | 灰色 `#888888` | 设备未运行 |
+| `1` | 运行中 | 绿色 `#00ff88` | 设备正常运行 |
+| `2` | 告警 | 红色 `#ff4444` | 设备故障或异常 |
+
+### Mock 数据示例解读
+
+项目提供的 `mock-data.json` 包含 5 条测试数据：
+
+**数据 1：1号车间 - 正常状态**
+```json
+{
+  "topic": "factory/device/001/data",
+  "payload": {
+    "deviceId": "001",
+    "deviceName": "1号车间温控",
+    "temperature": 26.5,  // < 30°C，显示青色
+    "humidity": 45,
+    "status": 1,          // 运行中，显示绿色
+    "timestamp": "2026-10-22 15:30:00"
+  }
+}
+```
+
+**数据 2：2号车间 - 警告状态**
+```json
+{
+  "topic": "factory/device/002/data",
+  "payload": {
+    "deviceId": "002",
+    "deviceName": "2号车间温控",
+    "temperature": 32.8,  // 30-35°C，显示黄色
+    "humidity": 52,
+    "status": 1,          // 运行中
+    "timestamp": "2026-10-22 15:30:05"
+  }
+}
+```
+
+**数据 3：3号车间 - 停止状态**
+```json
+{
+  "topic": "factory/device/003/data",
+  "payload": {
+    "deviceId": "003",
+    "deviceName": "3号车间温控",
+    "temperature": 18.2,  // < 30°C，显示青色
+    "humidity": 38,
+    "status": 0,          // 已停止，显示灰色
+    "timestamp": "2026-10-22 15:30:10"
+  }
+}
+```
+
+**数据 4：1号车间 - 温度上升**
+```json
+{
+  "topic": "factory/device/001/data",
+  "payload": {
+    "deviceId": "001",
+    "deviceName": "1号车间温控",
+    "temperature": 27.1,  // 略有上升，仍为青色
+    "humidity": 44,
+    "status": 1,
+    "timestamp": "2026-10-22 15:30:15"
+  }
+}
+```
+
+**数据 5：2号车间 - 危险告警**
+```json
+{
+  "topic": "factory/device/002/data",
+  "payload": {
+    "deviceId": "002",
+    "deviceName": "2号车间温控",
+    "temperature": 35.2,  // > 35°C，显示红色
+    "humidity": 55,
+    "status": 2,          // 告警，显示红色
+    "timestamp": "2026-10-22 15:30:20"
+  }
+}
+```
+
+### 如何自定义 Mock 数据
+
+#### 方法 1：修改 mock-data.json 文件
+
+直接编辑 `mock-data.json`，添加你的测试数据：
+
+```json
+[
+  {
+    "topic": "your/topic/here",
+    "payload": {
+      "deviceId": "custom-001",
+      "deviceName": "自定义设备",
+      "temperature": 28.5,
+      "humidity": 50,
+      "status": 1,
+      "timestamp": "2026-10-22 16:00:00"
+    }
+  }
+]
+```
+
+然后在 `mqtt-temperature.js` 中读取：
+
+```javascript
+// 在代码中加载 mock-data.json
+fetch('mock-data.json')
+  .then(res => res.json())
+  .then(data => {
+    const mockMessages = data.map(item => ({
+      topic: item.topic,
+      payload: JSON.stringify(item.payload)
+    }));
+    // 使用 mockMessages...
+  });
+```
+
+#### 方法 2：直接在代码中定义
+
+在 `mqtt-temperature.js` 中直接修改 `mockMessages` 数组：
+
+```javascript
+const mockMessages = [
+  {
+    topic: 'factory/device/A01/data',
+    payload: JSON.stringify({
+      deviceId: 'A01',
+      deviceName: 'A区1号设备',
+      temperature: 25.0,
+      humidity: 40,
+      status: 1,
+      timestamp: new Date().toISOString()
+    })
+  },
+  // 添加更多自定义数据...
+];
+```
+
+#### 方法 3：动态生成 Mock 数据
+
+使用函数动态生成测试数据：
+
+```javascript
+function generateMockData(deviceCount = 5) {
+  const messages = [];
+  for (let i = 1; i <= deviceCount; i++) {
+    messages.push({
+      topic: `factory/device/${String(i).padStart(3, '0')}/data`,
+      payload: JSON.stringify({
+        deviceId: String(i).padStart(3, '0'),
+        deviceName: `${i}号设备`,
+        temperature: 20 + Math.random() * 20,  // 20-40°C 随机
+        humidity: 30 + Math.random() * 40,     // 30-70% 随机
+        status: Math.floor(Math.random() * 3), // 0-2 随机
+        timestamp: new Date().toISOString()
+      })
+    });
+  }
+  return messages;
+}
+
+const mockMessages = generateMockData(10);  // 生成 10 条数据
+```
+
+### Mock 数据验证工具
+
+使用以下代码验证你的 Mock 数据格式是否正确：
+
+```javascript
+function validateMockData(data) {
+  const errors = [];
+  
+  if (!Array.isArray(data)) {
+    errors.push('数据必须是数组');
+    return errors;
+  }
+  
+  data.forEach((item, index) => {
+    if (!item.topic || typeof item.topic !== 'string') {
+      errors.push(`数据 ${index}: topic 必须是字符串`);
+    }
+    
+    if (!item.payload || typeof item.payload !== 'object') {
+      errors.push(`数据 ${index}: payload 必须是对象`);
+      return;
+    }
+    
+    const p = item.payload;
+    if (!p.deviceId) errors.push(`数据 ${index}: 缺少 deviceId`);
+    if (!p.deviceName) errors.push(`数据 ${index}: 缺少 deviceName`);
+    if (typeof p.temperature !== 'number') errors.push(`数据 ${index}: temperature 必须是数字`);
+    if (typeof p.status !== 'number') errors.push(`数据 ${index}: status 必须是数字`);
+  });
+  
+  return errors;
+}
+
+// 使用示例
+const errors = validateMockData(mockMessages);
+if (errors.length === 0) {
+  console.log('✅ Mock 数据格式正确');
+} else {
+  console.error('❌ Mock 数据格式错误:', errors);
+}
 ```
 
 ---
